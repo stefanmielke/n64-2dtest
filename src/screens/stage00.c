@@ -3,48 +3,41 @@
 #include "../graphic.h"
 #include "../definitions.h"
 
-u16 square_pos_x, square_pos_y;
-s8 square_speed;
+#include "../data/spr_pyoro_walk1.h"
+
+u16 pyoro_pos_x, pyoro_pos_y;
+u8 b;
 
 void clear_background(u8 r, u8 g, u8 b);
 void draw_rect(u16 x, u16 y, u16 w, u16 h, u8 r, u8 g, u8 b);
+void draw_pyoro(u16 x, u16 y);
 
 void stage00_init(void) {
-	square_pos_x = 0;
-	square_pos_y = (SCREEN_HT / 2) - 32;
-	square_speed = 2;
+	b = 255;
+	pyoro_pos_x = 32;
+	pyoro_pos_y = 32;
 }
 
 void stage00_update(void) {
-	square_pos_x += square_speed;
-
-	// bounce
-	// if (square_pos_x >= SCREEN_WD - 64 || square_pos_x <= 0) {
-	// 	square_speed *= -1;
-	// }
-
-	// warp
-	if (square_pos_x >= SCREEN_WD - 64) {
-		square_pos_x = 0;
-	}
+	b -= 1;
 }
 
 void stage00_draw(void) {
 	glistp = glist;
 	rcp_init(glistp);
 
-	clear_background(0, 0, 255);
-
-	draw_rect(square_pos_x, square_pos_y, 64, 64, 255, 0, 0);
+	clear_background(32, 32, b);
+	draw_pyoro(pyoro_pos_x, pyoro_pos_y);
 
 	gDPFullSync(glistp++);
 	gSPEndDisplayList(glistp++);
-	nuGfxTaskStart(glist, (s32)(glistp - glist) * sizeof(Gfx), NU_GFX_UCODE_F3DEX,
+	nuGfxTaskStart(glist, (s32)(glistp - glist) * sizeof(Gfx), NU_GFX_UCODE_F3DEX2,
 				   NU_SC_SWAPBUFFER);
 }
 
 void clear_background(u8 r, u8 g, u8 b) {
 	gDPSetCycleType(glistp++, G_CYC_FILL);
+	gDPSetDepthImage(glistp++, nuGfxCfb_ptr);
 	gDPSetColorImage(glistp++, G_IM_FMT_RGBA, G_IM_SIZ_16b, SCREEN_WD,
 					 osVirtualToPhysical(nuGfxCfb_ptr));
 	gDPSetFillColor(glistp++, (GPACK_RGBA5551(r, g, b, 1) << 16 | GPACK_RGBA5551(r, g, b, 1)));
@@ -54,15 +47,24 @@ void clear_background(u8 r, u8 g, u8 b) {
 
 void draw_rect(u16 x, u16 y, u16 w, u16 h, u8 r, u8 g, u8 b) {
 	gDPSetCycleType(glistp++, G_CYC_FILL);
+	gDPSetDepthImage(glistp++, nuGfxCfb_ptr);
 	gDPSetColorImage(glistp++, G_IM_FMT_RGBA, G_IM_SIZ_16b, SCREEN_WD,
-					 osVirtualToPhysical(nuGfxCfb_ptr));
+					 osVirtualToPhysical(nuGfxZBuffer));
 	gDPSetFillColor(glistp++, (GPACK_RGBA5551(r, g, b, 1) << 16 | GPACK_RGBA5551(r, g, b, 1)));
 	gDPFillRectangle(glistp++, x, y, x + w, y + h);
 	gDPPipeSync(glistp++);
 }
 
-/*
-[/] Draw a red 64x64 square on top of the blue background, centered in the screen
-[/] Make the square move left and right, bouncing on the sides of the screen
-[ ] Make the square, instead of bouncing off the screen, wrap around to the other side.
-*/
+void draw_pyoro(u16 x, u16 y) {
+	gDPSetCycleType(glistp++, G_CYC_1CYCLE);
+	gDPSetCombineMode(glistp++, G_CC_DECALRGBA, G_CC_DECALRGBA);
+	gDPSetRenderMode(glistp++, G_RM_AA_ZB_TEX_EDGE, G_RM_AA_ZB_TEX_EDGE);
+	gDPSetDepthSource(glistp++, G_ZS_PRIM);
+	gDPSetPrimDepth(glistp++, 0, 0);
+	gDPSetTexturePersp(glistp++, G_TP_NONE);
+	gDPLoadTextureBlock(glistp++, spr_pyoro_walk1, G_IM_FMT_RGBA, G_IM_SIZ_16b, 16, 16, 0,
+						G_TX_WRAP, G_TX_WRAP, G_TX_NOMASK, G_TX_NOMASK, G_TX_NOLOD, G_TX_NOLOD);
+	gSPTextureRectangle(glistp++, x - 8 << 2, y - 8 << 2, (x + 8) << 2, (y + 8) << 2,
+						G_TX_RENDERTILE, 0 << 5, 0 << 5, 1 << 10, 1 << 10);
+	gDPPipeSync(glistp++);
+}

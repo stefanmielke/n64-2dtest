@@ -32,10 +32,11 @@ ASMOBJECTS	= $(ASMFILES:.s=.o)
 
 CODEFILES  := $(wildcard *.c)
 SCREENFILES:= $(wildcard screens/*.c)
-CODEOBJECTS = $(CODEFILES:.c=.o) $(SCREENFILES:.c=.o) $(NUSYSLIBDIR)/nusys_rom.o
+DATAFILES  := $(wildcard data/*.c)
+CODEOBJECTS = $(CODEFILES:.c=.o) $(SCREENFILES:.c=.o) $(DATAFILES:.c=.o) $(NUSYSLIBDIR)/nusys_rom.o
 
-DATAFILES   = 
-DATAOBJECTS = $(DATAFILES:.c=.o)
+DATAFILES2   = 
+DATAOBJECTS = $(DATAFILES2:.c=.o)
 
 CODESEGMENT = codesegment.o
 
